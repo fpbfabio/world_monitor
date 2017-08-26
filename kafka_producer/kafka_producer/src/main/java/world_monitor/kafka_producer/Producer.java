@@ -20,6 +20,7 @@ public class Producer {
 	private Thread serverThread;
 
 	public void run() throws Exception {
+		Log.i("Starting kafka producer in port " + SOCKET_PORT + ", publishing to topic " + TOPIC_NAME);
 		Properties properties = createProperties();
 		initProducer(properties);
 	    initSocket();
