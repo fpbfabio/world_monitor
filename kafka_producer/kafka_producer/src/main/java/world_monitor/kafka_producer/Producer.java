@@ -14,6 +14,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 public class Producer {
 
 	private static final String TOPIC_NAME = "event";
+	private static final int PORT = 9092;
 	private static final int SOCKET_PORT = 3001;
 	private ServerSocket serverSocket;
 	private KafkaProducer<String, String> producer;
@@ -58,7 +59,7 @@ public class Producer {
 
 	private Properties createProperties() throws Exception {
 		Properties properties = new Properties();
-		properties.put("bootstrap.servers", "localhost:9092");
+		properties.put("bootstrap.servers", "localhost:" + PORT);
 		properties.put("acks", "all");
 		properties.put("retries", 0);
 		properties.put("batch.size", 16384);
