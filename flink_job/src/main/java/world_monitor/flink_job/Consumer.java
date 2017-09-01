@@ -1,9 +1,13 @@
 package world_monitor.flink_job;
 
-import org.apache.kafka.clients.consumer.*;
-
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Properties;
+
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 public class Consumer {
 
@@ -64,43 +68,7 @@ public class Consumer {
 	}
 
 	public interface ConsumerListener {
-		void onDataReceived(Record[] records);
-	}
-
-	public class Record {
-		private long offset;
-		private String key;
-		private String value;
-
-		public Record(long offset, String key, String value) {
-			setOffset(offset);
-			setKey(key);
-			setValue(value);
-		}
-
-		public long getOffset() {
-			return offset;
-		}
-
-		public void setOffset(long offset) {
-			this.offset = offset;
-		}
-
-		public String getKey() {
-			return key;
-		}
-
-		public void setKey(String key) {
-			this.key = key;
-		}
-
-		public String getValue() {
-			return value;
-		}
-
-		public void setValue(String value) {
-			this.value = value;
-		}
+		void onDataReceived(ArrayList<Tuple3<Long, String, String>> records);
 	}
 
 	private class ConsumerThread implements Runnable {
@@ -110,10 +78,10 @@ public class Consumer {
 			while (!Thread.currentThread().isInterrupted()) {
 				ConsumerRecords<String, String> consumerRecords = consumer.poll(POLL_TIMEOUT);
 				if (consumerRecords.count() > 0) {
-					Record[] records = new Record[consumerRecords.count()];
+					ArrayList<Tuple3<Long, String, String>> records = new ArrayList<Tuple3<Long, String, String>>();
 					int i = 0;
 					for (ConsumerRecord<String, String> record : consumerRecords)
-						records[i++] = new Record(record.offset(), record.key(), record.value());
+						records.add(new Tuple3<Long, String, String>(record.offset(), record.key(), record.value()));
 					listener.onDataReceived(records);
 				}
 			}
