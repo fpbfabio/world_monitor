@@ -163,14 +163,6 @@ public class MapReduceJob {
 			}
 
 		});
-		eventSet.flatMap(new FlatMapFunction<Event, Event>() {
-
-			@Override
-			public void flatMap(Event arg0, Collector<Event> arg1) throws Exception {
-				arg1.collect(arg0);
-			}
-			
-		});
 		try {
 			List<Event> eventList = eventSet.collect();
 			for (Event event : eventList) {
