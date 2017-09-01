@@ -47,6 +47,19 @@ class FacebookSpider(scrapy.Spider):
         if (last_response is not None and last_response['id']):
             soup = BeautifulSoup(source_code, 'html.parser')
             self.send_message(soup.prettify())
+            subsubmenus = soup.find_all('div', { 'class' : 'subsubmenuitem' })
+            for subusubmenu in subsubmenus:
+                if ("Media analysis" in subusubmenu.text)
+                    media_analysis_link = subsubmenu.find('a').get('href')
+                    yield response.follow(media_analysis_link, self.parse_media_analysis)
+
+    def parse_gdacs_impact(self, response):
+        source_code = response.body_as_unicode()
+        file_name = 'a.pkl'
+        last_response = self.read_pickle(file_name)
+        if (last_response is not None and last_response['id']):
+            soup = BeautifulSoup(source_code, 'html.parser')
+            self.send_message(soup.prettify())
 
     def read_pickle(self, file_name):
         last_response = None
