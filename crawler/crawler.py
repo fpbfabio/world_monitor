@@ -16,8 +16,10 @@ class FacebookSpider(scrapy.Spider):
         self.s.connect((addr, port))
 
     def send_message(self, msg):
+        self.init_socket()
         data = str.encode(msg + "\n")
         self.s.send(data)
+        self.close_socket()
 
     def close_socket(self):
         self.s.close()
@@ -28,14 +30,12 @@ class FacebookSpider(scrapy.Spider):
             yield response.follow(new_gdacs_url, self.parse_gdacs_summary)
 
     def parse_gdacs_summary(self, response):
-        self.init_socket()
         source_code = response.body_as_unicode()
         file_name = 'a.pkl'
         last_response = self.read_pickle(file_name)
         if (last_response is not None and last_response['id']):
-            file_name = last_response['id'] + "_summary.html"
             soup = BeautifulSoup(source_code, 'html.parser')
-            self.save_text_file(file_name, soup.prettify())
+            self.send_message(soup.prettify())
             subsubmenus = soup.find_all('div', { 'class' : 'subsubmenuitem' })
             full_report_link = subsubmenus[1].find('a').get('href')
             yield response.follow(full_report_link, self.parse_gdacs_impact)
@@ -45,19 +45,8 @@ class FacebookSpider(scrapy.Spider):
         file_name = 'a.pkl'
         last_response = self.read_pickle(file_name)
         if (last_response is not None and last_response['id']):
-            file_name = last_response['id'] + "_impact.html"
             soup = BeautifulSoup(source_code, 'html.parser')
-            self.save_text_file(file_name, soup.prettify())
-        self.close_socket()
-
-    def save_text_file(self, file_name, content):
-        self.send_message(content)
-        try:
-            with open(file_name, 'w') as file:
-                file.write(content)
-            return True
-        except Exception as e:
-            return False
+            self.send_message(soup.prettify())
 
     def read_pickle(self, file_name):
         last_response = None
