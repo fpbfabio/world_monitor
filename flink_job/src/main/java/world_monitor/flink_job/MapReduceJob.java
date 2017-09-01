@@ -145,10 +145,13 @@ public class MapReduceJob {
 							String populationAffectedByCycloneWinds = tds.get(6).ownText();
 							if (populationAffectedByCycloneWinds.contains("no people")) {
 								event.populationAffectedByCycloneWinds = 0;
-							} else {
+							} else if (!populationAffectedByCycloneWinds.contains("million")){
 								matcher = Pattern.compile("\\d+").matcher(tds.get(6).ownText());
 								matcher.find();
 								event.populationAffectedByCycloneWinds = Integer.parseInt(matcher.group());
+							} else {
+								populationAffectedByCycloneWinds = populationAffectedByCycloneWinds.replaceAll("[^\\d.]+|\\.(?!\\d)", "").trim();
+								event.populationAffectedByCycloneWinds = (int) (Float.parseFloat(populationAffectedByCycloneWinds) * 1000000);
 							}
 							String[] location = tds.get(7).ownText().split(",");
 							event.lat = Double.parseDouble(location[0].trim());
