@@ -1,13 +1,15 @@
 package world_monitor.flink_job;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.java.CollectionEnvironment;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -18,8 +20,11 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 public class MapReduceJob {
+	private static final String DATE_FORMAT = "dd MMM yyyy HH:mm:ss";
 
 	public void run(ArrayList<Tuple3<Long, String, String>> data) {
+		final DateFormat formatter = new SimpleDateFormat(DATE_FORMAT);
+		formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
 		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 		DataSet<Tuple3<Long, String, String>> dataSet = env.fromCollection(data);
 		DataSet<Event> eventSet = dataSet.flatMap(new FlatMapFunction<Tuple3<Long, String, String>, Event>() {
@@ -36,7 +41,7 @@ public class MapReduceJob {
 					if (subsubmenu != null) {
 						Element a = subsubmenu.select("a").first();
 						if (a != null && a.hasAttr("href")) {
-							event.link = a.attr("attr");
+							event.link = a.attr("href");
 						}
 					}
 					Element summary = doc.select("#ctl00_cph_Summary").first();
@@ -44,14 +49,14 @@ public class MapReduceJob {
 						Elements lis = summary.select("li");
 						for (Element li : lis) {
 							String ownText = li.ownText();
-							if (ownText.contains("within 100km")) {
+							if (ownText.contains("within 100km") && !ownText.toLowerCase().contains("no people")) {
 								Matcher matcher = Pattern.compile("\\d+").matcher(ownText);
 								matcher.find();
 								event.peopleWithin100km = Integer.parseInt(matcher.group());
 							}
 						}
 					}
-					Element p = earthquakesElements.select("p").first();
+					Element p = summary.select("p").first();
 					if (p != null) {
 						Element b = p.select("b").first();
 						if (b != null)
@@ -98,9 +103,10 @@ public class MapReduceJob {
 							Element b = element.select("b").first();
 							if (b != null) {
 								try {
-									event.utcTime = b.ownText();
+									Date date = formatter.parse(b.ownText());
+									event.utcTime = date.getTime();
 									arg1.collect(event);
-								} catch (NumberFormatException e) {
+								} catch (Exception e) {
 								}
 							}
 						}
@@ -114,7 +120,7 @@ public class MapReduceJob {
 							if (subsubmenu != null) {
 								Element a = subsubmenu.select("a").first();
 								if (a != null && a.hasAttr("href")) {
-									event.link = a.attr("attr");
+									event.link = a.attr("href");
 								}
 							}
 							Element head = doc.select("head").first();
@@ -137,7 +143,8 @@ public class MapReduceJob {
 								}
 							}
 							event.type = "cyclone";
-							event.utcTime = tds.get(2).ownText();
+							Date date = formatter.parse(tds.get(2).ownText());
+							event.utcTime = date.getTime();
 							event.category = tds.get(3).ownText();
 							Matcher matcher = Pattern.compile("\\d+").matcher(tds.get(4).select("b").first().ownText());
 							matcher.find();
@@ -145,13 +152,15 @@ public class MapReduceJob {
 							String populationAffectedByCycloneWinds = tds.get(6).ownText();
 							if (populationAffectedByCycloneWinds.contains("no people")) {
 								event.populationAffectedByCycloneWinds = 0;
-							} else if (!populationAffectedByCycloneWinds.contains("million")){
+							} else if (!populationAffectedByCycloneWinds.contains("million")) {
 								matcher = Pattern.compile("\\d+").matcher(tds.get(6).ownText());
 								matcher.find();
 								event.populationAffectedByCycloneWinds = Integer.parseInt(matcher.group());
 							} else {
-								populationAffectedByCycloneWinds = populationAffectedByCycloneWinds.replaceAll("[^\\d.]+|\\.(?!\\d)", "").trim();
-								event.populationAffectedByCycloneWinds = (int) (Float.parseFloat(populationAffectedByCycloneWinds) * 1000000);
+								populationAffectedByCycloneWinds = populationAffectedByCycloneWinds
+										.replaceAll("[^\\d.]+|\\.(?!\\d)", "").trim();
+								event.populationAffectedByCycloneWinds = (int) (Float
+										.parseFloat(populationAffectedByCycloneWinds) * 1000000);
 							}
 							String[] location = tds.get(7).ownText().split(",");
 							event.lat = Double.parseDouble(location[0].trim());
@@ -161,7 +170,6 @@ public class MapReduceJob {
 					}
 				}
 			}
-
 		});
 		try {
 			List<Event> eventList = eventSet.collect();

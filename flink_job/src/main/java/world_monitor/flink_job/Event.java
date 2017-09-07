@@ -1,5 +1,6 @@
 package world_monitor.flink_job;
 
+import java.util.Date;
 
 public class Event {
 
@@ -7,7 +8,7 @@ public class Event {
 	public double lat;
 	public double lon;
 	public String humanitarianImpact;
-	public String utcTime;
+	public long utcTime;
 	public String link;
 	public String type;
 	public float depht;
