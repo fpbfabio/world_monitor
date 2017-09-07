@@ -7,7 +7,7 @@ import socket
 
 class FacebookSpider(scrapy.Spider):
     name = 'blogspider'
-    start_urls = ['https://graph.facebook.com/gdacs/feed?access_token=462341000812745|6d28c7ac3ff22a978dceb052f47ff4fd&fields=id,link,created_time']
+    start_urls = ['https://graph.facebook.com/gdacs/posts?access_token=462341000812745|6d28c7ac3ff22a978dceb052f47ff4fd&fields=id,link,created_time']
 
     def init_socket(self):
         addr = "localhost"
@@ -49,7 +49,7 @@ class FacebookSpider(scrapy.Spider):
             self.send_message(soup.prettify())
             subsubmenus = soup.find_all('div', { 'class' : 'subsubmenuitem' })
             for subusubmenu in subsubmenus:
-                if ("Media analysis" in subusubmenu.text)
+                if ("Media analysis" in subusubmenu.text):
                     media_analysis_link = subsubmenu.find('a').get('href')
                     yield response.follow(media_analysis_link, self.parse_media_analysis)
 
